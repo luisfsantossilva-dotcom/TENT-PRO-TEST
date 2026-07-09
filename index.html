@@ -294,7 +294,6 @@ body.show-liv .liv-block{display:block;margin-top:16px;}
     <div class="ptab" data-profile="chauffage">Chauffage</div>
     <div class="ptab" data-profile="mobilier">Mobilier</div>
     <div class="ptab" data-profile="planning">Planning</div>
-    <div class="ptab" data-profile="flow">Flow</div>
   </div>
   <div class="hdr-right" style="gap:2px;">
     <span id="sync-status" style="display:none"></span>
@@ -2881,26 +2880,7 @@ function switchProfile(prof, tabEl){
     setTimeout(renderPlanning,80);
     return;
   }
-  if(prof==='flow'){
-    const rg=document.querySelector('.rg'); if(rg)rg.style.display='none';
-    const vw=document.getElementById('viz-wrap'); if(vw)vw.style.display='none';
-    const eb=$('err'); if(eb){eb.textContent='';eb.className='err';}
-    ['cont-right-panel','cmd-right-panel','stock-right-panel','pagode-right-panel',
-     'plancher-right-panel','chauf-right-panel','mob-right-panel','planning-right-panel'].forEach(id=>{
-      const el=document.getElementById(id); if(el){el.style.display='none';el.innerHTML='';}
-    });
-    document.querySelectorAll('.rc').forEach(e=>e.style.display='none');
-    const cvm=document.getElementById('chantier-view'); if(cvm)cvm.style.display='none';
-    const hdr2=document.querySelector('.hdr-right'); if(hdr2)hdr2.style.display='none';
-    let fp=document.getElementById('flow-right-panel');
-    if(!fp){
-      const right=document.querySelector('.right');
-      if(right){ fp=document.createElement('div'); fp.id='flow-right-panel'; fp.style.cssText='padding:0;overflow-y:auto;height:100%;'; right.appendChild(fp); }
-    }
-    if(fp){ fp.style.display='block'; fp.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">⏳ Chargement du Flow…</div>'; }
-    setTimeout(window.renderFlow,80);
-    return;
-  }
+
   if(prof==='pagode'){
     const eb=$('err'); if(eb){eb.textContent='';eb.className='err';}
     const cp=document.getElementById('cont-right-panel'); if(cp){cp.style.display='none';cp.innerHTML='';}
