@@ -1208,8 +1208,8 @@ const PDANSE={
         // W pair, L impair
         ferm1m = (L===1) ? W : (W+1);
       } else {
-        // W impair ET L impair → contribution des deux côtés
-        ferm1m = nL + nW2;
+        // W impair ET L impair: ferm1m = (nW2+nL)*2+4 (validé: 5×5=12, 7×5=14, 5×3=10, 7×7=16)
+        ferm1m = (nW2+nL)*2+4;
       }
     }
     if(renfort){
