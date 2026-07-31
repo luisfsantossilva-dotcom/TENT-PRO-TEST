@@ -1199,8 +1199,8 @@ const PDANSE={
     let ferm2m, ferm1m;
     if(remL===0){
       ferm2m = 3*nW2*nL + nW2 + nL;
-      // W impair → colonne extra 1m le long de L → nL fermettes 1m
-      ferm1m = remW ? nL : 0;
+      // W impair, L pair: ferm1m = 2*nL+1 (validé tous cas)
+      ferm1m = remW ? 2*nL+1 : 0;
     } else {
       const f2_even = 3*nW2*nL + nW2 + nL;
       ferm2m = f2_even + nW2 + (L===1 ? 1 : 0);
