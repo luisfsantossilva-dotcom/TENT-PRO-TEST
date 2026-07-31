@@ -730,32 +730,29 @@ const P240={
     const sabD=(sab==='oui')?(2*tn):0,sabS=(sab==='oui')?(2*(N-1)*tn):0;const gFS=(sab==='oui')?((sabD+sabS)/2):0;
     let blocs=0,sangl=0;if(sab==='oui'&&fix==='blocs'){blocs=Math.ceil(pil/2)+bfT;sangl=blocs;}
     const A=new Map();const addA=(n,q)=>{if(!q||q<=0)return;A.set(n,(A.get(n)||0)+q);};
-    if(hf==='oui'){if(ppL>0)addA('Plaque de base pilier charpente',ppL);if(ppG>0)addA('Plaque de base pignon charpente',ppG);const v=2*(ppL+ppG);if(v>0)addA('Vis M20×50',v);}
-    else addA('Plaque de base',tpL);
-    addA('Piquet noir',piqN); // fixe: 8 piquets noirs
-    addA('Piquet '+(p.piquetSize||'50')+' cm',piq50+Math.round(f.ptb/2)*4*pIn); // +plaques/pig×4 par pignon extra
     const isP200 = (w==='14.78'); // P200/120 — pièces spéciales
-    addA('Goupille L',gL);
-    if(!isP200) addA('Goupille Ferme',gFb+(sab==='oui'?Math.max(0,sabD+sabS-2):0)); // Goupille Ferme = 0 pour P200/120
-    addA('Goupille Faîte',gFi);
+    // ── 1. STRUCTURE ──
     addA(isP200?'Faîte P200/120':'Faîte',fai);
     addA(isP200?'Pilier P200/120 (2600 mm)':'Pilier '+pt,pil);
     addA(isP200?'Ferme 14,78 m (7745 mm) P200/120':'Ferme '+w+' m ('+this.DIM.fm[w]+' mm)',fer);
+    // ── 2. TUBES 120×80 ──
+    addA('Tube 120×80 rainuré',t12);
+    addA('Tube 120×80 avec pipo pignon',Math.round(f.tp12p*tn*_pF));
+    if(f.tp12s>0)addA('Tube 120×80 sans pipo pignon',Math.round(f.tp12s*tn*_pF));
+    // ── 3. TUBES RONDS ──
+    if(f.tr5a>0)addA('Tube rond 5m avec pipo',Math.round(f.tr5a*tn*_pF));
+    if(f.tr5s>0)addA('Tube rond 5m sans pipo',Math.round(f.tr5s*tn*_pF));
+    if(f.tr3s>0)addA('Tube rond 3m sans pipo',Math.round(f.tr3s*tn*_pF));
+    // ── 4. TUBES 60×60 + LUMIÈRE ──
     if(lum==='avec'){addA('Tube 60×60 lumière',tL);addA('Ampoule',aT);} else {addA('Tube 60×60',t6+tL);}
     if(lum==='avec')addA('Tube 60×60',t6);
-    addA('Tube 120×80 rainuré',t12);
+    addA('Ampoule',bol);
+    // ── 5. BARRES FERMETURE ──
     const bf4lbl = H==='H4' ? 'Barre fermeture 4m + rallonge 1m' : 'Barre fermeture 4m';
     const bf5lbl = H==='H4' ? 'Barre fermeture 5m + rallonge 1m' : 'Barre fermeture 5m';
     if(H==='H5'){
-      // Barres de fermeture P334 — hauteur calculée à chaque position (pente 20°, H5=5m)
-      // H(x) = 5 + x × tan(20°), seuil 7.3m: Petit ≤ 7.3m, Grand > 7.3m
-      // Positions par largeur: toutes à x=5m (Petit), 16/20/25m ont aussi x=8 ou 10m (Grand)
-      // BF intermédiaires: nb = (bf4+bf5) par pignon × nbre pignons
-      const nBFtot = bfT; // total barres par pignon × pignons déjà calculé
-      // Positions BF: toutes les largeurs ont x=5 (Petit); 16m a aussi x=8, 20/25m ont x=10
+      const nBFtot = bfT;
       const hasBFgrand = (wNum===16||wNum===20||wNum===25);
-      // Répartition: chaque pignon a bf4+bf5 barres au total
-      // Pour largeurs avec 2 positions: moitié Petit (x=5) + moitié Grand (x=8 ou 10)
       const nBFpetit = hasBFgrand ? Math.ceil(nBFtot/2) : nBFtot;
       const nBFgrand = hasBFgrand ? Math.floor(nBFtot/2) : 0;
       addA('Barre fermeture P334 Petit (≤7,3m)', nBFpetit);
@@ -763,24 +760,27 @@ const P240={
     } else {
       addA(bf4lbl,bf4);addA(bf5lbl,bf5);
     }
+    // ── 6. BARRES TENSION ──
+    addA('Barre tension petit',ptT);addA('Barre tension bâche 5m',ten5);
+    if(ten3>0)addA('Barre tension bâche 3m',ten3);if(ten2>0)addA('Barre tension bâche 2m',ten2);
     if(sab==='oui'){addA('Sablière double',sabD);addA('Sablière simple',sabS);}
+    // ── 7. PETIT MATÉRIEL ──
+    if(hf==='oui'){if(ppL>0)addA('Plaque de base pilier charpente',ppL);if(ppG>0)addA('Plaque de base pignon charpente',ppG);const v=2*(ppL+ppG);if(v>0)addA('Vis M20×50',v);}
+    else addA('Plaque de base',tpL);
+    addA('Piquet noir',piqN);
+    addA('Piquet '+(p.piquetSize||'50')+' cm',piq50+Math.round(f.ptb/2)*4*pIn);
+    addA('Goupille L',gL);
+    if(!isP200) addA('Goupille Ferme',gFb+(sab==='oui'?Math.max(0,sabD+sabS-2):0));
+    addA('Goupille Faîte',gFi);
     if(blocs>0){addA('Bloc béton 500 kg',blocs);addA("Sangle d'arrimage",sangl);addA('Goupille L',blocs);}
-    addA('Plaque câble Pilier (double)',pcP);addA('Plaque câble Faîte (simple)',pcF);
+    // ── 8. CÂBLES + PLAQUES CÂBLE ──
     addA('Câble pilier '+pt+' ('+this.DIM.cp[H]+' mm)',cP);
     if(isP200){
       if(this.DIM.ct[w]>0) addA('Câble toit P200/120 ('+this.DIM.ct[w]+' mm)',cT);
     } else {
       addA('Câble toit '+w+'m ('+this.DIM.ct[w]+' mm)',cT);
     }
-    addA('Barre tension petit',ptT);addA('Barre tension bâche 5m',ten5);
-    if(ten3>0)addA('Barre tension bâche 3m',ten3);if(ten2>0)addA('Barre tension bâche 2m',ten2);
-    // Pignon tubes: scale by _pF (defined above)
-    addA('Tube 120×80 avec pipo pignon',Math.round(f.tp12p*tn*_pF));
-    if(f.tp12s>0)addA('Tube 120×80 sans pipo pignon',Math.round(f.tp12s*tn*_pF));
-    if(f.tr5a>0)addA('Tube rond 5m avec pipo',Math.round(f.tr5a*tn*_pF));
-    if(f.tr5s>0)addA('Tube rond 5m sans pipo',Math.round(f.tr5s*tn*_pF));
-    if(f.tr3s>0)addA('Tube rond 3m sans pipo',Math.round(f.tr3s*tn*_pF));
-    addA('Ampoule',bol);
+    addA('Plaque câble Pilier (double)',pcP);addA('Plaque câble Faîte (simple)',pcF);
     const oi=n=>{const i=this.ORD.findIndex(r=>r.test(n));return i<0?999:i;};
     const Ar=[...A.entries()].map(([n,q])=>({name:n,qty:q})).sort((a,b)=>oi(a.name)-oi(b.name));
     const B=[];const addB=(base,tot,mode,no,cr,fe,se)=>{if(!tot)return null;const q=resolveColors(tot,mode,no,cr,fe,se);if(q.error)return{error:base+': total couleurs ('+q.used+') > total ('+q.total+').'};if(q.blanc>0)B.push({name:base+' – Blanc',qty:q.blanc,color:'blanc'});if(q.noir>0)B.push({name:base+' – Noir',qty:q.noir,color:'noir'});if(q.cristal>0)B.push({name:base+' – Cristal',qty:q.cristal,color:'cristal'});if(q.fenetre>0)B.push({name:base+' – Fenêtre',qty:q.fenetre,color:'fenetre'});if(q.secours>0)B.push({name:base+' – Secours',qty:q.secours,color:'secours'});return{ok:true};};
@@ -947,7 +947,7 @@ const P334={
     '24.85':{label:'24,85 m',ferme:'Ferme 24,85m (13260 mm)',rally:null,bache:'Bâche toiture 24,85m (27870 mm)',pignLabel:'Pignon complet 25m',brFaite:'3630mm',visArc:4,lumEte:6,lumHiv:4,lisse:5,t60hiv:6,piquet50:[40,12],barTens:[8,2],plaqP240:[8,0],ri5:[12,2],bt5:[12,2],ri2:0,bt2:0,bferm4:8,bferm5:0,bferm7:0,t120s:4,tr5a:2,tr5s:1,tr2a:0,ri2pig:0,cab46:8,cblDbl:4,cabRally:['Rallonge câble F25 (2289mm)',4],warn:null},
     '32':{label:'32 m',ferme:'Ferme 24,85m (13260 mm)',rally:['Rallonge ferme 32m (3761mm)',2],bache:'Bâche toiture 32m (35392 mm)',pignLabel:'Pignon complet 32m',brFaite:'3630mm',visArc:8,lumEte:6,lumHiv:4,lisse:5,t60hiv:6,piquet50:[48,12],barTens:[12,4],plaqP240:[12,0],ri5:[12,2],bt5:[14,2],ri2:2,bt2:2,bferm4:8,bferm5:0,bferm7:4,t120s:6,tr5a:2,tr5s:1,tr2a:2,ri2pig:2,cab46:12,cblDbl:8,cabRally:['Rallonge câble F32 (1073mm)',4],warn:null},
     '40.38':{label:'40,38 m',ferme:'Ferme 24,85m (13260 mm)',rally:['Rallonge ferme 40,38m (8171mm)',2],bache:'Bâche toiture 40,38m (44212 mm)',pignLabel:'Pignon complet 40m',brFaite:'4826mm',visArc:8,lumEte:8,lumHiv:4,lisse:7,t60hiv:6,piquet50:[52,12],barTens:[14,2],plaqP240:[14,0],ri5:[18,2],bt5:[18,2],ri2:0,bt2:0,bferm4:8,bferm5:0,bferm7:6,t120s:8,tr5a:0,tr5s:2,tr2a:0,ri2pig:0,cab46:16,cblDbl:12,cabRally:null,warn:null},
-    '46':{label:'46 m',ferme:'Ferme 24,85m (13260 mm)',rally:['Rallonge ferme 46m (11121mm)',2],bache:'Bâche toiture 46m (50112mm)',pignLabel:'Pignon complet 46m',brFaite:'4826mm',visArc:8,lumEte:10,lumHiv:4,lisse:7,t60hiv:6,piquet50:[60,12],barTens:[18,2],plaqP240:[18,0],ri5:[18,2],bt5:[18,2],ri2:0,bt2:0,ri3pig:4,bferm4:8,bferm5:0,bferm7:10,t120s:8,tr5a:0,tr5s:2,tr2a:0,ri2pig:0,cab46:16,cblDbl:16,cabRally:null,warn:null},
+    '46':{label:'46 m',ferme:'Ferme 24,85m (13260 mm)',rally:['Rallonge ferme 46m (11121mm)',2],bache:'Bâche toiture 46m (50112mm)',pignLabel:'Pignon complet 46m',brFaite:'4826mm',visArc:8,lumEte:10,lumHiv:4,lisse:7,t60hiv:6,piquet50:[60,12],barTens:[18,2],plaqP240:[18,0],ri5:[18,2],bt5:[18,2],ri2:0,bt2:0,ri3pig:4,bferm4:8,bferm5:0,bferm7:10,t120s:8,tr5a:0,tr5s:2,tr2a:0,ri2pig:0,cab46:16,cblDbl:16,cabRally:['Rallonge câble F46 (3027mm)',4],warn:null},
   },
   cblSets(N){return Math.ceil(N/3);},
   build(p){
@@ -966,14 +966,21 @@ const P334={
     const N=N334,arc=N+1,cs=this.cblSets(N); // N334=floor(len/5), remL334=len%5
     const h334=p.hauteur334||'H4';
     const A=new Map();const addA=(n,q)=>{if(!n||!q||q<=0)return;A.set(n,(A.get(n)||0)+q);};
-    addA('Faîte',arc);addA('Pilier P4/P6 profil 334',2*arc);addA(d.ferme,2*arc);
+    const pilierLabel = h334==='H6' ? 'Pilier P6 — P334 (5747mm)' : 'Pilier P4 — P334 (3617mm)';
+    // ── 1. STRUCTURE PRINCIPALE ──
+    addA('Faîte',arc);addA(pilierLabel,2*arc);addA(d.ferme,2*arc);
     if(d.rally)addA(d.rally[0],d.rally[1]*arc);
-    addA('Goupille Pilier/Bracon P334',10*arc);addA('Vis M20×140',d.visArc*arc);
     addA('Bracon pilier (5263mm)',2*arc);addA('Bracon faite ('+d.brFaite+')',arc);
-    addA('Plaque de base P334',2*arc);addA('Goupille L P334',2*arc);
-    // ── Tube 120×80 lisse : base + bonus H6 (+2 par câble set) ──
+    // ── 2. TUBES 120×80 ──
     addA('Tube 120×80 lisse', d.lisse*N + (h334==='H6' ? 2*cs : 0));
     addA('Tube 120×80 rainuré',2*N);
+    addA('Tube 120×80 pignon coupe droite',2+pIn);addA('Tube 120×80 pignons coupe gauche',2+pIn);
+    if(d.t120s)addA('Tube 120×80 sans pipo pignon',Math.round(d.t120s*_pF334));
+    // ── 3. TUBES RONDS ──
+    if(d.tr5a)addA('Tube rond 5m avec pipo',Math.round(d.tr5a*(2+pIn)));
+    if(d.tr5s)addA('Tube rond 5m sans pipo',Math.round(d.tr5s*(2+pIn)));
+    if(d.tr2a)addA('Tube rond 2m avec pipo',Math.round(d.tr2a*(2+pIn)));
+    // ── 4. TUBES 60×60 + LUMIÈRE ──
     if(season==='ete'){
       if(lum334==='avec'){addA('Tube 60×60 lumière',d.lumEte*N);addA('Ampoule',d.lumEte*N);}
       else{addA('Tube 60×60',d.lumEte*N);}
@@ -981,40 +988,39 @@ const P334={
       if(lum334==='avec'){addA('Tube 60×60 lumière',d.lumHiv*N);addA('Ampoule',d.lumHiv*N);addA('Tube 60×60',d.t60hiv*N);}
       else{addA('Tube 60×60',d.lumHiv*N+d.t60hiv*N);}
     }
-    addA('Piquet '+(p.piquetSize||'50')+' cm',d.piquet50[0]+d.piquet50[1]*(N-1)+plaqPerPig*4*pIn); // +plaqPerPig×4 piquets par pignon extra
-    addA('Barre tension petit',d.barTens[0]+d.barTens[1]*(N-1)+d.barTens[1]*pIn);
-    // plaqPerPig defined above
-    addA('Plaque de base P240',d.plaqP240[0]+d.plaqP240[1]*(N-1)+plaqPerPig*pIn);
-    addA('Goupille L P240',d.plaqP240[0]+d.plaqP240[1]*(N-1)+plaqPerPig*pIn);
-    addA('Barre tension bâche 5m',d.bt5[0]+d.bt5[1]*(N-1));
-    if(d.bt2)addA('Barre tension bâche 2m',d.bt2);
-    addA('Piquet noir',8); // fixe: 8 piquets noirs (pignon de base)
-    // Barres fermeture: scale by _pF334
+    // ── 5. BARRES FERMETURE ──
     if(d.bferm4)addA('Barre fermeture 4m',Math.round(d.bferm4*_pF334));
     if(d.bferm5)addA('Barre fermeture 5m',Math.round(d.bferm5*_pF334));
     if(d.bferm7)addA('Barre fermeture 7m',Math.round(d.bferm7*_pF334));
-    if(d.t120s)addA('Tube 120×80 sans pipo pignon',Math.round(d.t120s*_pF334));
-    // Pignon structural tubes: 2 pignons standard + pIn intermédiaires
-    addA('Tube 120×80 pignon coupe droite',2+pIn);addA('Tube 120×80 pignons coupe gauche',2+pIn);
-    if(d.tr5a)addA('Tube rond 5m avec pipo',Math.round(d.tr5a*(2+pIn)));
-    if(d.tr5s)addA('Tube rond 5m sans pipo',Math.round(d.tr5s*(2+pIn)));
-    if(d.tr2a)addA('Tube rond 2m avec pipo',Math.round(d.tr2a*(2+pIn)));
-    // ── PLAQUES CÂBLE — varient selon hauteur H4/H6 ──
-    addA('Plaque câble Gauche',2*cs);
-    addA('Plaque câble Droite',2*cs);
-    // Plaque câble simple : 6 par câble set (H4) ou 12 par câble set (H6)
-    addA('Plaque câble simple', (h334==='H6' ? 12 : 6) * cs);
-    // Plaque câble pilier : 2 par câble set (H4) ou 4 par câble set (H6)
-    addA('Plaque câble pilier', (h334==='H6' ? 4 : 2) * cs);
-    addA('Plaque câble faite',4*cs);
-    addA('Vis M20×160',16*cs);
-    // ── CÂBLES — couleur et quantité selon hauteur ──
+    // ── 6. BARRE TENSION ──
+    addA('Barre tension petit',d.barTens[0]+d.barTens[1]*(N-1)+d.barTens[1]*pIn);
+    addA('Barre tension bâche 5m',d.bt5[0]+d.bt5[1]*(N-1));
+    if(d.bt2)addA('Barre tension bâche 2m',d.bt2);
+    // ── 7. PETIT MATÉRIEL (piquets, vis, goupilles, plaques de base) ──
+    addA('Piquet '+(p.piquetSize||'50')+' cm',d.piquet50[0]+d.piquet50[1]*(N-1)+plaqPerPig*4*pIn);
+    addA('Piquet noir',8);
+    addA('Goupille Pilier/Bracon P334',10*arc);
+    // Vis M20×160: formule validée = vis_cs[w][H] × cs + vis_arc[w][H] × arc
+    const VIS_CS={'20.20':{H4:16,H6:24},'24.85':{H4:16,H6:24},'32':{H4:24,H6:24},'40.38':{H4:32,H6:32},'46':{H4:40,H6:48}};
+    const VIS_ARC={'20.20':{H4:4,H6:4},'24.85':{H4:4,H6:4},'32':{H4:8,H6:8},'40.38':{H4:8,H6:8},'46':{H4:8,H6:8}};
+    const _vcs=(VIS_CS[w]||{})[h334]||0;
+    const _varc=(VIS_ARC[w]||{})[h334]||0;
+    addA('Vis M20×160', _vcs*cs + _varc*arc);
+    addA('Plaque de base P334',2*arc);addA('Goupille L P334',2*arc);
+    addA('Plaque de base P240',d.plaqP240[0]+d.plaqP240[1]*(N-1)+plaqPerPig*pIn);
+    addA('Goupille L P240',d.plaqP240[0]+d.plaqP240[1]*(N-1)+plaqPerPig*pIn);
+    // ── 8. CÂBLES + PLAQUES CÂBLE ──
     if(h334==='H6'){
       addA('Câble P6 (Vert)', 8*cs);
     } else {
       addA('Câble P4 (Rouge)', 4*cs);
     }
     addA('Câble 46m (6872mm)',d.cab46*cs);if(d.cabRally)addA(d.cabRally[0],d.cabRally[1]*cs);
+    addA('Plaque câble Gauche',2*cs);
+    addA('Plaque câble Droite',2*cs);
+    addA('Plaque câble Double',d.cblDbl*cs);
+    addA('Plaque câble Faîte', (h334==='H6' ? 12 : 4) * cs);
+    addA('Plaque câble Pilier + Vis M20×50', 4 * cs);
     // Rideaux P334: ri5[0] includes 2 pignons base → scale pignon part
     // ri5T: (2+pIn) pignons × per_pig_ri5 rideaux + modules contribution
     const ri5T=Math.round(d.ri5[0] + d.ri5[1]*(N-1) + (d.ri5[0]/2)*pIn);
@@ -1027,7 +1033,48 @@ const P334={
     if(ri3T>0) addA('Barre tension rideau 3m',ri3T);
     const errs=[addB('Rideau 5m',ri5T,p.ri5_mode,p.ri5_noir,p.ri5_cristal,p.ri5_fenetre,p.ri5_secours),addB('Rideau 2m',ri2T,p.ri2_mode,p.ri2_noir,p.ri2_cristal,null),addB('Rideau 3m',ri3T,p.ri3_mode,p.ri3_noir,p.ri3_cristal,null),addB(d.bache,bacT,p.b_mode,p.b_noir,p.b_cristal,null),addB(d.pignLabel,pigT,p.p_mode,p.p_noir,p.p_cristal,null)].filter(e=>e&&e.error);
     if(errs.length)return{error:errs[0].error};
-    const P334_ORD=[/^Piquet noir/i,/^Barre tension petit/i,/^Plaque de base P240/i,/^Goupille L P240/i,/^Piquet \d/i,/^Goupille L P334/i,/^Plaque de base P334/i,/^Goupille Pilier/i,/^Vis M20.140/i,/^Ampoule/i,/^Plaque câble Gauche/i,/^Plaque câble Droite/i,/^Plaque câble pilier/i,/^Plaque câble simple/i,/^Plaque câble faite/i,/^Vis M20.160/i,/^Câble P/i,/^Câble 46/i,/^Rallonge câble/i,/^Faîte/i,/^Pilier P4/i,/^Ferme /i,/^Rallonge ferme/i,/^Tube 60.60 lumi/i,/^Tube 60.60$/i,/^Tube 120.80 rainuré/i,/^Tube 120.80 lisse/i,/^Bracon pilier/i,/^Bracon faite/i,/^Barre fermeture 4/i,/^Barre fermeture 5/i,/^Barre fermeture 7/i,/^Barre tension bâche 5/i,/^Barre tension bâche [23]/i,/^Tube 120.80 pignon coupe droite/i,/^Tube 120.80 pignons coupe gauche/i,/^Tube 120.80 sans pipo/i,/^Tube rond 5.* sans pipo/i,/^Tube rond 5.* avec pipo/i,/^Tube rond 2.* avec pipo/i,/^Tube rond 3.* sans pipo/i];
+    const P334_ORD=[
+      /^Piquet noir/i,
+      /^Barre tension petit/i,
+      /^Goupille L P334/i,
+      /^Goupille Pilier/i,
+      /^Goupille L P240/i,
+      /^Vis M20.160/i,
+      /^Plaque câble Droite/i,
+      /^Plaque câble Gauche/i,
+      /^Plaque câble Pilier/i,
+      /^Plaque câble Double/i,
+      /^Plaque câble Faît/i,
+      /^Vis M20.50/i,
+      /^Câble P[46]/i,
+      /^Câble 46/i,
+      /^Rallonge câble/i,
+      /^Plaque de base P240/i,
+      /^Piquet \d/i,
+      /^Plaque de base P334/i,
+      /^Faîte/i,
+      /^Ampoule/i,
+      /^Pilier P[46]/i,
+      /^Ferme /i,
+      /^Rallonge ferme/i,
+      /^Bracon pilier/i,
+      /^Bracon faite/i,
+      /^Tube 120.80 lisse/i,
+      /^Tube 120.80 rainuré/i,
+      /^Tube 120.80 pignon coupe droite/i,
+      /^Tube 120.80 pignons coupe gauche/i,
+      /^Tube 120.80 sans pipo/i,
+      /^Tube rond 5.* avec pipo/i,
+      /^Tube rond 5.* sans pipo/i,
+      /^Tube rond 2.* avec pipo/i,
+      /^Tube 60.60 lumi/i,
+      /^Tube 60.60$/i,
+      /^Barre fermeture 4/i,
+      /^Barre fermeture 5/i,
+      /^Barre fermeture 7/i,
+      /^Barre tension bâche 5/i,
+      /^Barre tension bâche [23]/i,
+    ];
     const p334oi=n=>{const i=P334_ORD.findIndex(r=>r.test(n));return i<0?999:i;};
     const Ar=[...A.entries()].map(([n,q])=>({name:n,qty:q})).sort((a,b)=>p334oi(a.name)-p334oi(b.name));
     // ── Module spécial automatique P334 (reste après N×5m) ──
@@ -1035,7 +1082,7 @@ const P334={
       const lk=String(remL334).replace('.',',');
       // 1 arc supplémentaire sans câbles
       Ar.push({name:'Ferme P334 '+w.replace('.',',')+' m',qty:2,detail:'module spécial '+lk+'m'});
-      Ar.push({name:'Pilier P4/P6 profil 334',qty:2,detail:'module spécial '+lk+'m'});
+      Ar.push({name:pilierLabel,qty:2,detail:'module spécial '+lk+'m'});
       Ar.push({name:'Faîte',qty:1,detail:'module spécial '+lk+'m'});
       Ar.push({name:'Goupille Pilier/Bracon P334',qty:10,detail:'module spécial '+lk+'m'});
       // Tubes longitudinaux (même qty que modules 5m, longueur spéciale)
@@ -10309,7 +10356,7 @@ async function renderSaves(){
   el.innerHTML='<div style="font-size:11px;color:var(--text3);padding:4px">Chargement…</div>';
   let saves=[];
   if(SB.online){
-    const rows=await SB.get('tp_configs','?order=created_at.desc&limit=60');
+    const rows=await SB.get('tp_configs','?order=id.desc&limit=60');
     if(Array.isArray(rows)) saves=rows.map(r=>({_id:r.id,name:r.name,date:(r.created_at||'').slice(0,10),snap:r.snap}));
   }
   if(!saves.length) saves=JSON.parse(localStorage.getItem('cdm_saves')||'[]');
