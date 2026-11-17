@@ -1872,7 +1872,7 @@ function cheneauBuildPieces(p){
   ].filter(s=>+(s.a||0)>+(s.de||0));
 
   const A=[], B=[];
-  let totalSupp=0, totPieces5=0, totVis=0, totBride=0;
+  let totalSupp=0, totPieces5=0, totVis=0, totBride=0, nSegMetal=0;
   const det5=[], detVis=[], detBride=[];
 
   allSegs.forEach(seg=>{
@@ -1885,6 +1885,7 @@ function cheneauBuildPieces(p){
       // Chéneau métallique: pièces de 5m (longSeg/5 par segment)
       const nPieces = Math.max(1, Math.round(longSeg/5));
       totPieces5 += nPieces;
+      nSegMetal++;                   // 1 pièce avec descente par segment
       totVis     += nPieces+2;      // vis M10/20 fileté = pièces 5m + 2 (par segment)
       det5.push('côté '+seg.cote+' '+de+'→'+a+'m: '+nPieces+' pc');
       detVis.push('côté '+seg.cote+': '+nPieces+'+2');
@@ -1899,9 +1900,12 @@ function cheneauBuildPieces(p){
   });
 
   if(type==='metal' && totPieces5>0){
-    A.push({name:'Chéneau métallique 5m', qty:totPieces5, detail:det5.join(' | ')});
+    const nStd = Math.max(0, totPieces5 - nSegMetal);
+    if(nStd>0) A.push({name:'Chéneau métallique 5m', qty:nStd, detail:det5.join(' | ')+' — dont '+nSegMetal+' avec descente (ligne suivante)'});
+    A.push({name:'Chéneau métallique 5m avec descente', qty:nSegMetal, detail:'toujours 1 par segment ('+nSegMetal+' segment'+(nSegMetal>1?'s':'')+')'});
     A.push({name:'Vis M10/20 fileté', qty:totVis, detail:detVis.join(' | ')+' (pièces 5m + 2 par segment)'});
-    A.push({name:'Bride appui chéneau métallique', qty:totBride, detail:detBride.join(' | ')+' (1 par pilier)'});
+    A.push({name:'Fermeture de chéneau', qty:nSegMetal, detail:'1 par segment ('+nSegMetal+' segment'+(nSegMetal>1?'s':'')+')'});
+    A.push({name:'Bride d\'appui chéneau métallique', qty:totBride, detail:detBride.join(' | ')+' (1 par pilier)'});
   }
 
   // Suppression de sangle
@@ -2227,11 +2231,65 @@ function drawTent(svgId, W, L, bay, barPos, H_label, specialYs, extras){
   const mH = p(hx,0,He/2);
   svg += `<text x="${(mH[0]-7).toFixed(1)}" y="${mH[1].toFixed(1)}" dy="4" text-anchor="end" font-size="11" fill="${E_DIM}" font-weight="600">${H_label}</text>`;
 
+  // Chéneau le long de l'égout : profil métallique (gris) ou bâche (orange), descente à la fin, fermeture au début
+  if(ex.cheneau && Array.isArray(ex.cheneau.segs)){
+    const metal = ex.cheneau.type!=='bache';
+    const C_CH = metal ? '#475569' : '#ea580c', C_CHF = metal ? '#94a3b8' : '#fdba74';
+    const o=0.45, dz=0.35;                     // débord extérieur et hauteur du profil (m)
+    for(const s of ex.cheneau.segs){
+      const xw = s.cote==='G' ? 0 : W, sx = s.cote==='G' ? -1 : 1;
+      const y0=Math.max(0,Math.min(Ltot,s.de)), y1=Math.max(0,Math.min(Ltot,s.a));
+      if(y1<=y0) continue;
+      const hid = (xw===0);                    // paroi gauche = cachée
+      const P=[p(xw,y0,He),p(xw,y1,He),p(xw+sx*o,y1,He),p(xw+sx*o,y0,He)];
+      const Q=[p(xw+sx*o,y0,He),p(xw+sx*o,y1,He),p(xw+sx*o,y1,He-dz),p(xw+sx*o,y0,He-dz)];
+      const poly=(pts,f,st)=>`<polygon points="${pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ')}" fill="${f}" stroke="${st}" stroke-width="1" ${hid?'opacity="0.55"':''}/>`;
+      svg += poly(P, C_CHF, C_CH);
+      svg += poly(Q, C_CHF, C_CH);
+      if(metal){
+        // descente (tube vertical) au bout du segment
+        const dA=p(xw+sx*o*0.6,y1-0.25,He-dz), dB=p(xw+sx*o*0.6,y1-0.25,0.15);
+        svg += seg(dA,dB,3.2,C_CH,hid?'4,3':null);
+        // fermeture au début du segment
+        svg += seg(p(xw,y0,He), p(xw+sx*o,y0,He-dz), 2.6, '#0f172a');
+        // joints des pièces de 5 m
+        for(let yy=y0+5; yy<y1-0.01; yy+=5) svg += seg(p(xw+sx*o,yy,He), p(xw+sx*o,yy,He-dz), 0.8, C_CH);
+      }
+    }
+  }
+
   // Tubes 120×80 lisse latéraux (P334 H6) : 1 par travée et par paroi, à mi-hauteur
   if(ex.lisseLat){
     const C_LIS='#0891b2', zL=He/2;
     for(const xw of [0,W]){
       svg += seg(p(xw,0,zL), p(xw,Ltot,zL), xw===0?1.8:2.6, C_LIS, xw===0?'5,3':null);   // paroi gauche = cachée → pointillé
+    }
+  }
+
+  // Chéneau (le long de l'égout, par segment) : profil métal + brides à chaque pilier + descente + fermeture
+  if(ex.cheneau){
+    const met = ex.cheneau.type!=='bache';
+    const C_CH = met ? '#475569' : '#0ea5e9';
+    const sides = [['G',0,-0.35],['D',W,W+0.35]];
+    for(const [cote,xw,xo] of sides){
+      const hidden = (xw===0);
+      for(const sg of (ex.cheneau[cote]||[])){
+        const a0=p(xo,sg.de,He-0.15), a1=p(xo,sg.a,He-0.15);
+        // gouttière (profil U) : bord haut + corps épais
+        svg += seg(p(xo,sg.de,He+0.12), p(xo,sg.a,He+0.12), 1, C_CH, hidden?'4,3':null);
+        svg += seg(a0, a1, hidden?3:5, C_CH, hidden?'6,3':null);
+        if(met){
+          // brides d'appui à chaque pilier
+          for(let y=sg.de; y<=sg.a+0.01; y+=5){
+            svg += seg(p(xw,y,He-0.45), p(xo,y,He-0.15), 1.6, '#f59e0b');
+          }
+          // fermeture (début) + descente (fin)
+          const f0=p(xo,sg.de,He-0.15);
+          svg += `<rect x="${(f0[0]-2.5).toFixed(1)}" y="${(f0[1]-4).toFixed(1)}" width="5" height="8" fill="#1e293b"/>`;
+          svg += seg(p(xo,sg.a,He-0.15), p(xo,sg.a,0.25), hidden?1.6:2.6, C_CH, hidden?'4,3':null);
+          svg += seg(p(xo,sg.a,0.25), p(xo+(xw===0?-0.5:0.5),sg.a,0.05), hidden?1.6:2.6, C_CH);
+        }
+      }
     }
   }
 
@@ -2244,6 +2302,10 @@ function drawTent(svgId, W, L, bay, barPos, H_label, specialYs, extras){
 
   // Légende dynamique
   const legend = [];
+  if(ex.cheneau){ const _n=(ex.cheneau.G||[]).length+(ex.cheneau.D||[]).length;
+    if(ex.cheneau.type!=='bache') legend.push({color:'#475569', label:'Chéneau métal — '+_n+' segment'+(_n>1?'s':'')+' (descente + fermeture, brides orange)'});
+    else legend.push({color:'#0ea5e9', label:'Chéneau bâche — '+_n+' segment'+(_n>1?'s':'')}); }
+  if(ex.cheneau && ex.cheneau.segs && ex.cheneau.segs.length){ const _m=ex.cheneau.type!=='bache'; legend.push({color:_m?'#475569':'#ea580c', label:_m?'Chéneau métallique — descente en bout de segment, fermeture au début':'Chéneau bâche'}); }
   if(ex.lisseLat){ const _nb=Math.ceil(Ltot/bay-0.01); legend.push({color:'#0891b2', label:'Tube 120×80 lisse latéral (H6) — '+(_nb*2)+' (1 / travée / paroi)'}); }
   if(cabledBays.length>0){
     const nX=cabledBays.length;
@@ -2412,6 +2474,18 @@ function updateViz(res, p, ovA){
         const c=CFG[_w334]||[2,null];
         extras={cabledBays:[...new Set(bays)], mode:'toit', croixParPan:c[0], rallonge:c[1], pilierX:((S.hauteur334||'H4')==='H6'?2:1), lisseLat:((S.hauteur334||'H4')==='H6')};
       }
+    }
+    // Chéneau (visualisation) : segments G (paroi x=0) et D (paroi x=W)
+    if(S.cheneau==='oui'){
+      const _sg=(S.cheneauSegG||[]).map(s=>({cote:'G',de:+s.de||0,a:+s.a||0}));
+      const _sd=(S.cheneauCotes==='2')?(S.cheneauSegD||[]).map(s=>({cote:'D',de:+s.de||0,a:+s.a||0})):[];
+      const _segs=[..._sg,..._sd].filter(s=>s.a>s.de);
+      if(_segs.length){ extras=extras||{}; extras.cheneau={type:S.cheneauType||'metal', segs:_segs}; }
+    }
+    if(S.cheneau==='oui' && (prof==='p240'||prof==='p334')){
+      const _ok=s=>(s||[]).filter(x=>+(x.a||0)>+(x.de||0)).map(x=>({de:+x.de,a:Math.min(+x.a,L2)}));
+      extras = extras||{};
+      extras.cheneau = {type:S.cheneauType||'metal', G:_ok(S.cheneauSegG), D:(S.cheneauCotes==='2')?_ok(S.cheneauSegD):[]};
     }
     drawTent('tent-svg-wrap',      W2, L2, bay, barPos, hLabel, specialYs, extras);
     drawTent('tent-svg-print-wrap',W2, L2, bay, barPos, hLabel, specialYs, extras);
